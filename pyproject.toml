@@ -20,12 +20,12 @@ readme = "README.rst"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-boto3 = "^1.26"
+boto3 = "^1.28"
 
 [tool.poetry.group.dev.dependencies]
-black = "^23.3.0"
-isort = "^5.12.0"
-placebo = "^0.10.0"
+black = "^23.7"
+isort = "^5.12"
+placebo = "^0.10"
 pytest = "^7.3.1"
 coverage = "^7.2.3"
 Sphinx = "^6.2.0"
@@ -34,7 +34,7 @@ pre-commit = "^3.2.2"
 tbump = "^6.9.0"
 
 [build-system]
-requires = ["poetry-core>=1.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.black]

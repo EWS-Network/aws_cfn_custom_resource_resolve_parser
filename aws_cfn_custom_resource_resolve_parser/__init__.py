@@ -4,6 +4,8 @@
 
 """Top-level package for AWS CFN Custom resource Resolve parser."""
 
+from __future__ import annotations
+
 import base64
 import json
 import re
@@ -30,41 +32,23 @@ SECRET_NAME_REGEXP = re.compile(
 )
 
 
-def keyisset(key, obj):
-    """
-    Function to verify the key is present and contains something in the object
-
-    :param str key:
-    :param dict obj:
-    :rtype: bool
-    """
-    if obj and isinstance(obj, dict) and key in obj.keys() and obj[key]:
-        return True
-    return False
-
-
-def keypresent(key, obj):
-    """
-    Function to verify the key is present in the object
-
-    :param str key:
-    :param dict obj:
-    :rtype: bool
-    """
+def keypresent(key: str, obj: dict) -> bool:
     if obj and isinstance(obj, dict) and key in obj.keys():
         return True
     return False
 
 
-def parse_secret_resolve_string(resolve_str):
-    """
-    Function to parse the resolve string and return the parts of it of interest
+def keyisset(key: str, obj: dict) -> bool:
+    if keypresent(key, obj) and obj[key]:
+        return True
+    return False
 
-    :param str resolve_str:
-    :return: tuple of the secret, key and stage.
-    :rtype: tuple
+
+def parse_secret_resolve_string(resolve_str: str) -> tuple:
     """
-    secret = None
+    Parse the resolve string to find the secret
+    Returns key and stage if found/defined.
+    """
     key = None
     stage = None
     if SECRET_ARN_REGEXP.match(resolve_str):
@@ -77,6 +61,8 @@ def parse_secret_resolve_string(resolve_str):
     elif SECRET_NAME_REGEXP.match(resolve_str):
         parts = SECRET_NAME_REGEXP.match(resolve_str)
         secret = parts.group("name")
+        if not secret:
+            raise ValueError("Unable to find the secret name in", resolve_str)
     else:
         raise ValueError(
             "Unable to define secret ARN nor secret name from", resolve_str
@@ -88,10 +74,13 @@ def parse_secret_resolve_string(resolve_str):
     return secret, key, stage
 
 
-def retrieve_secret(secret, key=None, stage=None, client=None, session=None):
+def retrieve_secret(
+    secret: str, key: str = None, stage: str = None, session: Session = None
+) -> str:
     """
-    Function to retrieve the secret. If key is provided, attempts to return only the key value.
-    If stage is provided, retrieves the secret for given stage.
+    Function to retrieve the secret value.
+    If key is provided, returns the key value. Fails if key does not exist.
+    If stage is provided, retrieves the secret for given stage. Fails if stage does not exist.
 
     :param str secret:
     :param str key:
@@ -103,13 +92,14 @@ def retrieve_secret(secret, key=None, stage=None, client=None, session=None):
     :raises: ClientError in case of an error with boto3
     :raises: ResourceNotFoundException,ResourceNotFoundException if specific issue with secret retrieval
     """
-    if not client and session:
-        client = session.client("secretsmanager")
-    elif not client and not session:
-        client = Session().client("secretsmanager")
+    if session is None or not isinstance(session, Session):
+        session = Session()
+    if stage is None:
+        stage = "AWSCURRENT"
+    client = session.client("secretsmanager")
     try:
         get_secret_value_response = client.get_secret_value(
-            SecretId=secret, VersionStage="AWSCURRENT" if not stage else stage
+            SecretId=secret, VersionStage=stage
         )
         if keyisset("SecretString", get_secret_value_response):
             res = json.loads(get_secret_value_response["SecretString"])
@@ -131,12 +121,6 @@ def retrieve_secret(secret, key=None, stage=None, client=None, session=None):
 
 
 def handle(resolve_str):
-    """
-    Main function.
-
-    :param resolve_str:
-    :return:
-    """
-    parts = parse_secret_resolve_string(resolve_str)
-    secret = retrieve_secret(parts[0], parts[1], parts[2])
+    secret_name, key, version = parse_secret_resolve_string(resolve_str)
+    secret = retrieve_secret(secret_name, key, version)
     return secret
