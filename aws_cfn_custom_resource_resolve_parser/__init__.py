@@ -15,7 +15,7 @@ from botocore.exceptions import ClientError
 
 __author__ = """John Preston"""
 __email__ = "john@ews-network.net"
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 
 SECRET_ARN_REGEXP = re.compile(
