@@ -20,7 +20,7 @@ readme = "README.rst"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-boto3 = "^1.28"
+boto3 = "^1.26"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.7"
